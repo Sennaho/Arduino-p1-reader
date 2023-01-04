@@ -11,6 +11,7 @@
 
 #include "secrets.h"
 #include <Arduino_JSON.h>
+#include <Adafruit_SleepyDog.h>
 
 #define BUFFER_SIZE 1050
 char ssid[] = SECRET_SSID;  // your network SSID (name)
@@ -47,6 +48,7 @@ void setup() {
   Serial1.setTimeout(5000);
 
   checkConnToWiFiAndMqtt();
+  Watchdog.enable(16000);
   SerialUSB.println("Startup complete");
 }
 
@@ -58,7 +60,7 @@ void checkConnToWiFiAndMqtt() {
     while (WiFi.status() != WL_CONNECTED) {
       WiFi.begin(ssid, pass);
       SerialUSB.print(".");
-      delay(5000);
+      delay(3000);
     }
     SerialUSB.println("You're connected to the network");
     SerialUSB.println();
@@ -70,7 +72,7 @@ void checkConnToWiFiAndMqtt() {
     while (!mqttClient.connect(broker, port)) {
       SerialUSB.print("MQTT connection failed! Error code = ");
       SerialUSB.println(mqttClient.connectError());
-      delay(5000);
+      delay(3000);
     }
   }
 }
@@ -82,10 +84,13 @@ void loop() {
     checkConnToWiFiAndMqtt();
   }
   read_p1_hardwareserial();
+  
 }
 
 void read_p1_hardwareserial() {
   if (Serial1.available()) {
+    Serial.println("Serial available");
+    Watchdog.reset();
     while (Serial1.available()) {
       int len = Serial1.readBytesUntil('\n', telegram, BUFFER_SIZE);
       processLine(len);
